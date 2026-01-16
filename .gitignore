@@ -1,0 +1,12 @@
+# 忽略 Hugo 生成的静态网站文件（因为我们会随时重新生成）
+public/
+
+# 忽略 Hugo 的资源缓存
+resources/_gen/
+
+# 忽略 Hugo 的临时锁文件
+.hugo_build.lock
+
+# 忽略 Mac 系统自动生成的垃圾文件
+.DS_Store
+**/.DS_Store
