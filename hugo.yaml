@@ -16,21 +16,18 @@ menu:
     - name: Home
       url: ""
       weight: 1
-    - name: About
-      url: "about/"
+    - name: Posts
+      url: "post/"
       weight: 2
-    - name: Categories
-      url: "categories/"
-      weight: 3
     - name: Tags
       url: "tags/"
-      weight: 4
-    - name: Subscribe
-      url: "index.xml"
+      weight: 3
+    # - name: Subscribe
+    #   url: "index.xml"
 
 params:
   description: "A website built through Hugo and blogdown."
-  footer: "&copy; [Yihui Xie](https://yihui.org) 2017 -- {Year} | [Github](https://github.com/yihui) | [BlueSky](https://bsky.app/profile/yihui.org)"
+  footer: "&copy; [Haiyang Sun](https://sunsealucky.github.io) 2026 -- {Year} | [Github](https://github.com/SunSeaLucky)"
 
 markup:
   highlight:
