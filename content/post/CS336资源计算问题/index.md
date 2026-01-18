@@ -29,25 +29,25 @@ d_ff : 6,400
 
 - Embedding
 
-其参数的尺寸是 $num~embeddings\times embedding~dim$，所以
+其参数的尺寸是 $\text{num\_embeddings}\times \text{embedding\_dim}$，所以
 
-$$num~embeddings\times embedding~dim=vocab~size\times d~model=50,257\times 1,600=80,411,200$$
+$$\text{num\_embeddings}\times \text{embedding\_dim}=\text{vocab\_size}\times \text{d\_model}=50,257\times 1,600=80,411,200$$
 
 - RMSNorm
 
-因为每个 TransformerBlock 中都有 RMSNorm、CausalMultiHeadAttention、RotaryPositionalEmbedding、SwiGLU，所以我们先讨论这三块。RMSNorm 的参数数量是 $d~model$，即
+因为每个 TransformerBlock 中都有 RMSNorm、CausalMultiHeadAttention、RotaryPositionalEmbedding、SwiGLU，所以我们先讨论这三块。RMSNorm 的参数数量是 $\text{d\_model}$，即
 
-$$d~model=1,600$$
+$$\text{d\_model}=1,600$$
 
 - RotaryPositionalEmbedding
 
 虽然 RoPE 并没有需要训练的参数，但其在计算时也会占用内存，且大小为
 
-$$seq~len \times \frac{d_k}{2} \times 2$$
+$$\text{seq\_len} \times \frac{d_k}{2} \times 2$$
 
-其中 $d_k=d_v=d~model/num~heads=64$，故 RoPE 的（最大）参数量为：
+其中 $d_k=d_v=\text{d\_model}/\text{num\_heads}=64$，故 RoPE 的（最大）参数量为：
 
-$$seq~len \times \frac{d_k}{2} \times 2=context~length\times\frac{d_k}{2}\times 2=65,536$$
+$$\text{seq\_len} \times \frac{d_k}{2} \times 2=\text{context\_length}\times\frac{d_k}{2}\times 2=65,536$$
 
 - SwiGLU
 
@@ -69,13 +69,13 @@ class SwiGLU(torch.nn.Module):
 
 容易看出，总参数量为：
 
-$$3\times d~model\times d~ff = 3 \times 1,600 \times 6,400=30,720,000$$
+$$3\times \text{d\_model}\times \text{d\_ff} = 3 \times 1,600 \times 6,400=30,720,000$$
 
 - CausalMultiHeadAttention
 
-其 $Q、K、V、O$ 均为 $d~model\times d~model$，其中 $O$ 是上投影层。总共可训练参数量为：
+其 $Q、K、V、O$ 均为 $\text{d\_model}\times \text{d\_model}$，其中 $O$ 是上投影层。总共可训练参数量为：
 
-$$4\times d~model\times d~model=4\times 1,600\times 1,600=10,240,000$$
+$$4\times \text{d\_model}\times \text{d\_model}=4\times 1,600\times 1,600=10,240,000$$
 
 - Transformer
 
@@ -83,7 +83,7 @@ $$4\times d~model\times d~model=4\times 1,600\times 1,600=10,240,000$$
 
 $$2\times1,600+10,240,000+30,720,000=40,963,200$$
 
-Transformer 包括 1 个 Embedding、1 个 RotaryPositionalEmbedding（不计入可训练参数）、48 个 TransformerBlock、1 个 RMSNorm、1 个 Linear 上投影层（$d~model\times vocab~size$）。故总参数量为：
+Transformer 包括 1 个 Embedding、1 个 RotaryPositionalEmbedding（不计入可训练参数）、48 个 TransformerBlock、1 个 RMSNorm、1 个 Linear 上投影层（$\text{d\_model}\times \text{vocab\_size}$）。故总参数量为：
 
 $$
 1\times 80,411,200 + 48\times 40,963,200 + 1\times 1,600 + 1\times 1,600\times 50,257=2,127,057,600
@@ -99,7 +99,7 @@ $$
 
 ## 问题二
 
-**1）假设输入的长度为 $context~length$，在一次前向传播过程中，需要多少 FLOPs？只计算矩阵乘法。**
+**1）假设输入的长度为 $\text{context\_length}$，在一次前向传播过程中，需要多少 FLOPs？只计算矩阵乘法。**
 
 对于矩阵 $A(m\times n)$、$B(n\times p)$，其 FLOPs 数量为 $2mnp$。知道做了多少次矩阵乘法，就知道了总的 FLOPs。我们还是像刚才一样，一层层看。
 
@@ -126,19 +126,19 @@ def forward(
 
 可以看到，实际上没有做矩阵乘法（注意 `self.w * x` 不是矩阵乘法）。
 
-对于 `rms = torch.sqrt(reduce(x**2, "... d_model -> ... 1", "mean") + self.eps)` 来说，做了 $batch~size\times seq~len\times d~model$ 次乘法、$batch~size\times seq~len\times (d~model-1)+1$ 次加法、$batch~size\times seq~len$ 次开方。
+对于 `rms = torch.sqrt(reduce(x**2, "... d_model -> ... 1", "mean") + self.eps)` 来说，做了 $\text{batch\_size}\times \text{seq\_len}\times \text{d\_model}$ 次乘法、$\text{batch\_size}\times \text{seq\_len}\times (\text{d\_model}-1)+1$ 次加法、$\text{batch\_size}\times \text{seq\_len}$ 次开方。
 
-对于 `result = self.w * x / rms` 来说，`self.w` 会被广播为 $batch~size\times seq~len\times d~model$，然后逐元素相乘，因此乘法次数也是 $batch~size\times seq~len\times d~model$，除法次数也是 $batch~size\times seq~len\times d~model$。
+对于 `result = self.w * x / rms` 来说，`self.w` 会被广播为 $\text{batch\_size}\times \text{seq\_len}\times \text{d\_model}$，然后逐元素相乘，因此乘法次数也是 $\text{batch\_size}\times \text{seq\_len}\times \text{d\_model}$，除法次数也是 $\text{batch\_size}\times \text{seq\_len}\times \text{d\_model}$。
 
 总共的运算次数是：
 
 $$
 \begin{aligned}
-FLOPS_{RMSNorm} =& batch~size\times seq~len\times d~model + \\
-& batch~size\times seq~len\times (d~model-1)+ 1 + \\
-& batch~size\times seq~len + \\
-& 2\times batch~size\times seq~len\times d~model \\
-=&4\times batch~size\times seq~len\times d~model + 1
+FLOPS_{RMSNorm} =& \text{batch\_size}\times \text{seq\_len}\times \text{d\_model} + \\
+& \text{batch\_size}\times \text{seq\_len}\times (\text{d\_model}-1)+ 1 + \\
+& \text{batch\_size}\times \text{seq\_len} + \\
+& 2\times \text{batch\_size}\times \text{seq\_len}\times \text{d\_model} \\
+=&4\times \text{batch\_size}\times \text{seq\_len}\times \text{d\_model} + 1
 \end{aligned}
 $$
 
@@ -172,12 +172,12 @@ x_even_rot = x_even * pos_cos - x_old * pos_sin  # [..., seq_len, d_k/2]
 x_old_rot = x_even * pos_sin + x_old * pos_cos  # [..., seq_len, d_k/2]
 ```
 
-而 $d_k = d~model / num~heads = 64$，因此
+而 $d_k = \text{d\_model} / \text{num\_heads} = 64$，因此
 
 $$
 \begin{aligned}
-FLOPS_{RotaryPositionalEmbedding} &= (2*batch~size\times seq~len\times d_k/2 + 1)\times 2 \\
-&= 128\times batch~size\times seq~len + 2
+FLOPS_{RotaryPositionalEmbedding} &= (2*\text{batch\_size}\times \text{seq\_len}\times d_k/2 + 1)\times 2 \\
+&= 128\times \text{batch\_size}\times \text{seq\_len} + 2
 \end{aligned}
 $$
 
@@ -193,25 +193,25 @@ def forward(self, x: torch.Tensor):  # [batch_size, seq_len, d_model] -> [batch_
 第一次矩阵乘法，`_x = self.w1(x)`， FLOPs 数量为：
 
 $$
-batch~size\times 2\times seq~len\times d~model\times d~ff
+\text{batch\_size}\times 2\times \text{seq\_len}\times \text{d\_model}\times \text{d\_ff}
 $$
 
 第二次矩阵乘法，`self.w3(x)`， FLOPs 数量为：
 
 $$
-batch~size\times 2\times seq~len\times d~model\times d~ff
+\text{batch\_size}\times 2\times \text{seq\_len}\times \text{d\_model}\times \text{d\_ff}
 $$
 
 第三次矩阵乘法，`self.w2(self.w3(x) * x_silu)`， FLOPs 数量为：
 
 $$
-batch~size\times 2\times seq~len\times d~model\times d~ff
+\text{batch\_size}\times 2\times \text{seq\_len}\times \text{d\_model}\times \text{d\_ff}
 $$
 
-其中，$d~ff=\frac{8d~model}{3}$，故 SwiGLU 总 FLOPs 数量为：
+其中，$\text{d\_ff}=\frac{8\text{d\_model}}{3}$，故 SwiGLU 总 FLOPs 数量为：
 
 $$
-batch~size\times 16\times seq~len\times d~model\times d~model
+\text{batch\_size}\times 16\times \text{seq\_len}\times \text{d\_model}\times \text{d\_model}
 $$
 
 - scaled_dot_product_attention（有矩阵乘法，为了得到答案，只计算矩阵乘法部分）
@@ -234,21 +234,21 @@ def scaled_dot_product_attention(
 $Q$ 和 $K$ 矩阵乘法，FLOPs 数量为：
 
 $$
-batch~size\times 2 \times seq~len\times d_k\times seq~len
+\text{batch\_size}\times 2 \times \text{seq\_len}\times d_k\times \text{seq\_len}
 $$
 
 再乘 $V$ 矩阵，FLOPs 数量为：
 
 $$
-batch~size\times 2 \times seq~len\times seq~len\times d_v
+\text{batch\_size}\times 2 \times \text{seq\_len}\times \text{seq\_len}\times d_v
 $$
 
-其中，$d_k=d_v=d~model/num~heads=64$，故 scaled_dot_product_attention 总 FLOPs 数量为：
+其中，$d_k=d_v=\text{d\_model}/\text{num\_heads}=64$，故 scaled_dot_product_attention 总 FLOPs 数量为：
 
 $$
 \begin{aligned}
-FLOPS_{scaled~dot~product~attention}&= batch~size\times 4 \times seq~len\times seq~len\times 64 \\
-&= 128\times batch~size\times seq~len\times seq~len
+FLOPS_{\text{scaled\_dot\_product\_attention}}&= \text{batch\_size}\times 4 \times \text{seq\_len}\times \text{seq\_len}\times 64 \\
+&= 128\times \text{batch\_size}\times \text{seq\_len}\times \text{seq\_len}
 \end{aligned}
 $$
 
@@ -284,19 +284,19 @@ def forward(self, x: torch.Tensor) -> torch.Tensor:  # [batch_size, seq_len, d_m
     return y
 ```
 
-其 $Q、K、V、O$ 均为 $d~model\times d~model$，其中 $O$ 是上投影层。四个矩阵乘法形状相同，总计算量为：
+其 $Q、K、V、O$ 均为 $\text{d\_model}\times \text{d\_model}$，其中 $O$ 是上投影层。四个矩阵乘法形状相同，总计算量为：
 
 $$
-4\times batch~size\times 2\times seq~len\times d~model \times d~model
+4\times \text{batch\_size}\times 2\times \text{seq\_len}\times \text{d\_model} \times \text{d\_model}
 $$
 
-而 $FLOPS_{scaled~dot~product~attention}=128\times batch~size\times seq~len\times seq~len$，所以
+而 $FLOPS_{\text{scaled\_dot\_product\_attention}}=128\times \text{batch\_size}\times \text{seq\_len}\times \text{seq\_len}$，所以
 
 $$
 \begin{aligned}
-FLOPS_{CausalMultiHeadAttention}=&4\times batch~size\times 2\times seq~len\times d~model \times d~model + \\
-&128\times batch~size\times seq~len\times seq~len \\
-=& 8\times batch~size \times seq~len \times d~model^2 + 128 \times batch~size\times seq~len^2
+FLOPS_{CausalMultiHeadAttention}=&4\times \text{batch\_size}\times 2\times \text{seq\_len}\times \text{d\_model} \times \text{d\_model} + \\
+&128\times \text{batch\_size}\times \text{seq\_len}\times \text{seq\_len} \\
+=& 8\times \text{batch\_size} \times \text{seq\_len} \times \text{d\_model}^2 + 128 \times \text{batch\_size}\times \text{seq\_len}^2
 \end{aligned}
 $$
 
@@ -332,12 +332,12 @@ def forward(self, x: torch.Tensor):  # [batch_size, seq_len]
 
 $$
 \begin{aligned}
-FLOPS_{TransformerLM} =& num~layers\times FLOPS_{TransformerBlock} + FLOPS_{RMSNorm} + FLOPS_{Linear}\\
-=& num~layers\times (FLOPS_{CausalMultiHeadAttention} + FLOPS_{SwiGLU}) + FLOPS_{RMSNorm} + FLOPS_{Linear}\\
-=& 48\times(8\times batch~size \times 1024\times 1600^2+128\times batch~size\times 1024^2+batch~size\times 16\times 1024\times 1600^2)+\\
+FLOPS_{TransformerLM} =& \text{num\_layers}\times FLOPS_{TransformerBlock} + FLOPS_{RMSNorm} + FLOPS_{Linear}\\
+=& \text{num\_layers}\times (FLOPS_{CausalMultiHeadAttention} + FLOPS_{SwiGLU}) + FLOPS_{RMSNorm} + FLOPS_{Linear}\\
+=& 48\times(8\times \text{batch\_size} \times 1024\times 1600^2+128\times \text{batch\_size}\times 1024^2+\text{batch\_size}\times 16\times 1024\times 1600^2)+\\
 &0+\\
-&2\times batch~size\times 1024\times 50257\times 1600 \\
-=&1,177,881,214,976\times batch~size
+&2\times \text{batch\_size}\times 1024\times 50257\times 1600 \\
+=&1,177,881,214,976\times \text{batch\_size}
 \end{aligned}
 $$
 
@@ -351,7 +351,7 @@ $$
 
 1）对于 GPT-2 small (12 layers, 768 d_model, 12 heads)、 GPT-2 medium (24layers, 1024 d_model, 16 heads) 和 GPT-2 large (36 layers, 1280 d_model, 20 heads) 模型，哪个变量的改变最影响模型的 FLOPs 数量？
 
-根据计算公式，很显然应该是平方项，即 $d~model$ 和 $context~length$。不过这里没有 $context~length$，所以答案应该是 $d~model$。
+根据计算公式，很显然应该是平方项，即 $\text{d\_model}$ 和 $\text{context\_length}$。不过这里没有 $\text{context\_length}$，所以答案应该是 $\text{d\_model}$。
 
 ## 问题五
 
