@@ -2,13 +2,15 @@
 title: Home
 ---
 
-[<img src="https://simpleicons.org/icons/github.svg" style="max-width:15%;min-width:40px;float:right;" alt="Github repo" />](https://github.com/yihui/hugo-xmin)
+[<img src="image.png" style="max-width:15%;min-width:40px;float:right;" alt="Github repo" />](https://sunsealucky.github.io/)
 
 # HAIYANG SUN｜孙海洋
 
 我现在是新疆大学的一名本科大四学生。
 
 ## 我的论文
+
+### DeepFake
 
 - [AAAI'26][Uncovering and Mitigating Destructive Multi-Embedding Attacks in Deepfake Proactive Forensics](https://arxiv.org/abs/2508.17247), *Lixin Jia\*, Haiyang Sun\*, Zhiqing Guo, Yunfeng Diao, Dan Ma, Gaobo Yang*
 - [INFFUS'25][DiffMark: Diffusion-based Robust Watermark Against Deepfakes](https://arxiv.org/abs/2507.01428), *Chen Sun, Haiyang Sun, Zhiqing Guo, Yunfeng Diao, Liejun Wang, Dan Ma, Gaobo Yang, Keqin Li*
