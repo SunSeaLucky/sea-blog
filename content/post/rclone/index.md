@@ -1,0 +1,21 @@
+---
+date: 2025-11-05 14:22:00 +0800
+tags:
+- 科研
+- Rclone
+publish: true
+title: rclone
+---
+
+## 安装 & 配置 Rclone
+
+```bash
+conda install rclone -c conda-forge -y
+rclone config
+```
+
+## 防止被谷歌识别为人机
+
+```bash
+rclone copy --transfers 1 --checkers 1 --tpslimit 1 --tpslimit-burst 1 --drive-pacer-min-sleep 200ms --drive-pacer-burst 1 --drive-chunk-size 128M --drive-upload-cutoff 128M --log-file /var/log/rclone-gdrive.log --retries 10 --low-level-retries 20 -v -P
+```

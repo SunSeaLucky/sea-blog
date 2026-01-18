@@ -1,0 +1,100 @@
+---
+date: 2025-11-24 00:00:01 +0800
+tags:
+- 科研
+- VSCode
+publish: true
+title: 下水道科研
+---
+
+## 背景介绍
+
+大多数人科研面临的情况都是缺显卡。求爷爷告奶奶借来的服务器，常常难以使用。这些服务器通常满足以下条件：
+
+- 非裸金属服务器；
+- 没有自己的账号；
+- 所有人都有 root 权限。
+
+> [AutoDL](https://www.autodl.com/docs/env/)（2025 年中国深度学习科研人员流行的租卡平台）：容器实例内不支持使用Docker，如需使用Docker请联系客服租用裸金属服务器。（裸金属服务器整机包月起租。）
+
+这带来了以下问题：
+
+- 非裸金属服务器代表着，它通常是容器环境，无法再使用 [docker](https://www.docker.com/)。因为你不能在 docker 里使用 docker；
+- 你只能使用 A 的账号，你还发现，有 n 个人和你一起用 A 的账号；
+- 天知道谁又用 sudo 干了什么事情，机器时不时就出点小问题；
+- 杂乱的环境变量、端口使用。每打开一个终端，你都要手动导出一遍 [wandb](https://wandb.ai/site/) 的 key，除非你把它写到 .bashrc/.zshrc 中，让别人也用你的 key。但显然，你不想这么做；
+- 共用的 `.vscode-server` 目录，n 个人装了 n 个不同的 VSCode 插件，你看着 VSCode 拓展面板里的 Augment、WindSurf、CodeX、Cline、Roo Code、Kilo Code 陷入沉思；
+- 共享的家目录。比如 Codex 在登录时会把 `auth.json` 放到家目录下，这样和你共享此账号的人可以随意使用你付费订阅的服务。
+
+我戏称以上情况为下水道式科研。它给我一种感受，我好像在和这几张 A100 偷情，而且不止有我在和它偷情。
+
+## 如何解决
+
+本文的所有解决办法 **完全不会影响** 到同样使用该服务器的他人。
+
+### VSCode 插件共享问题
+
+首先，让我们去掉 VSCode 界面中其他人安装的乱起八糟的插件！先回顾一下 VSCode 存储数据、插件的目录，它通常位于 `~/.vscode-server` 目录下。然而，伟大的 `Remote-SSH` 插件提供了这样一个选项 `remote.SSH.serverInstallPath`，它可以指定 VSCode 在服务器上的安装目录。
+
+选择一个目录，作为你期望的家目录，可以是 `/home/A/<your_name>`。然后修改 `.vscode-server` 的位置，在 **本机** 的 VSCode `settings.json` 文件中添加以下内容：
+
+```json
+{
+    "remote.SSH.serverInstallPath": {
+        "<host_name>": "/home/A/<your_name>",
+    },
+}
+```
+
+这时重启 VSCode 通常没有效果，因为服务器上运行着 VSCode 的 `.vscode-server` 进程，需要先杀死它们。按下 Ctrl+Shift+P，搜索 `Remote-SSH: Kill Current VS Code server`，选择并杀死服务器上正在运行的 `.vscode-server` 相关进程。然后服务器自动重连，此问题即可解决。
+
+### 共享家目录和环境变量问题
+
+解决该问题的核心思想就是修改 `HOME` 变量，本文以 [zsh](https://www.zsh.org/) 为例。打开一个服务器终端，导出 `$HOME=/home/A/<your_name>`，然后通过以下命令安装 zsh（该命令会默认安装到 `~/.local/bin`）：
+
+```bash
+sh -c "$(curl -fsSL https://raw.githubusercontent.com/romkatv/zsh-bin/master/install)"
+```
+
+接着安装 [oh-my-zsh](https://ohmyz.sh/)（如果你不喜欢，可以跳过这一步）：
+
+```bash
+CHSH=no RUNZSH=no sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"
+```
+
+在 VSCode **远程服务器** 上的 `settings.json` 文件中添加以下内容（注意这里的 `settings.json` 的位置是服务器，而非本机）：
+
+```json
+{
+    "terminal.integrated.profiles.linux": {
+        "zsh": {
+            "path": "/usr/bin/env",
+            "args": [
+                "HOME=/home/A/<your_name>",
+                "ZDOTDIR=/home/A/<your_name>",
+                "/home/A/<your_name>/.local/bin/zsh",
+                "-l"
+            ],
+        }
+    },
+    "terminal.integrated.defaultProfile.linux": "zsh",
+}
+```
+
+这一步十分关键，其中的 `HOME=/home/A/<your_name>` 指定了我们期望的家目录。
+
+到这里所有的配置就结束了，不过，如果你想要终端更炫酷一些的话，可以选择安装 Powerlevel10k 主题：
+
+```bash
+git clone --depth=1 https://github.com/romkatv/powerlevel10k.git ${ZSH_CUSTOM:-$HOME/.oh-my-zsh/custom}/themes/powerlevel10k
+```
+
+然后，找到 ZSH_THEME="robbyrussell" 这一行，修改为：
+
+```bash
+ZSH_THEME="powerlevel10k/powerlevel10k"
+```
+
+## 总结
+
+配置好这些之后，环境变量不会再从原来的 `.bashrc` 中继承了。这些操作也完全没有干扰使用此服务器的他人，但用起来好像给自己新开了一个账号一样。最后，祝愿大家早日摆脱下水道式科研。
