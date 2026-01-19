@@ -6,7 +6,7 @@ publish: true
 title: CS336资源计算问题
 ---
 
-最近在学习 Standford 336 的课程，由于本人对这类计算问题不甚熟悉，因此记录一下。下图是课程中的 Transformer 结构：
+最近在学习 [Standford CS336](https://stanford-cs336.github.io/spring2025/) 的课程，由于本人对这类计算问题不甚熟悉，因此记录一下。下图是课程中的 Transformer 结构：
 
 ![](assets/CS336资源计算问题/2025-12-06-13-01-43.png)
 
