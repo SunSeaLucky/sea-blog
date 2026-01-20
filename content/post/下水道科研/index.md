@@ -81,9 +81,7 @@ CHSH=no RUNZSH=no sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/
 }
 ```
 
-这一步十分关键，其中的 `HOME=/home/A/<your_name>` 指定了我们期望的家目录。
-
-到这里所有的配置就结束了，不过，如果你想要终端更炫酷一些的话，可以选择安装 Powerlevel10k 主题：
+这一步十分关键，其中的 `HOME=/home/A/<your_name>` 指定了我们期望的家目录。到这里所有的配置就结束了，不过，如果你想要终端更炫酷一些的话，可以选择安装 [powerlevel10k](https://github.com/romkatv/powerlevel10k) 主题：
 
 ```bash
 git clone --depth=1 https://github.com/romkatv/powerlevel10k.git ${ZSH_CUSTOM:-$HOME/.oh-my-zsh/custom}/themes/powerlevel10k
@@ -97,4 +95,4 @@ ZSH_THEME="powerlevel10k/powerlevel10k"
 
 ## 总结
 
-配置好这些之后，环境变量不会再从原来的 `.bashrc` 中继承了。这些操作也完全没有干扰使用此服务器的他人，但用起来好像给自己新开了一个账号一样。最后，祝愿大家早日摆脱下水道式科研。
+配置好这些后，环境变量不会再从原来的 `.bashrc` 中继承了。这些操作也完全不会干扰使用此服务器的其他人，但用起来好像给自己新开了一个账号一样。最后，祝愿大家早日摆脱下水道式科研。
